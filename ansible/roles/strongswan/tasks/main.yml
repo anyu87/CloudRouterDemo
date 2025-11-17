@@ -1,0 +1,32 @@
+---
+- name: Install StrongSwan including extra plugins
+  apt:
+    name: [strongswan, strongswan-swanctl, libstrongswan-extra-plugins]
+    state: present
+
+- name: Configure swanctl.conf
+  template:
+    src: swanctl.conf.j2
+    dest: /etc/swanctl/conf.d/deployment.conf
+    mode: '0644'
+
+- name: Configure StrongSwan charon.conf to load all tunnels on startup
+  block:
+    - name: Check if swanctl startup command already exists in charon.conf
+      command: grep -q "swanctl = /usr/sbin/swanctl --load-all" /etc/strongswan.d/charon.conf
+      register: swanctl_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Update charon.conf to include swanctl startup command
+      shell: |
+        sed -i '/start-scripts\s*{/,/}/{
+          /}/i\        swanctl = /usr/sbin/swanctl --load-all
+        }' /etc/strongswan.d/charon.conf
+      when: swanctl_exists.rc != 0
+
+- name: Restart StrongSwan (using strongswan-starter)
+  systemd:
+    name: strongswan-starter
+    state: restarted
+    enabled: yes

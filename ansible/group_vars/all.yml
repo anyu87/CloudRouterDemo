@@ -1,0 +1,8 @@
+---
+ike_proposal: "aes256-sha256-modp2048"
+esp_proposal: "aes256-sha256-modp2048"
+ike_lifetime: 14400
+esp_lifetime: 7200
+dpd_timeout: 30
+
+lan_cidr: "{{ lan_network_address }}/{{ lan_network_prefix }}"

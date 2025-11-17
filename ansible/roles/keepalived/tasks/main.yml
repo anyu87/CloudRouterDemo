@@ -1,0 +1,17 @@
+---
+- name: Install Keepalived
+  apt:
+    name: keepalived
+    state: present
+
+- name: Configure Keepalived
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0644'
+
+- name: Enable and start Keepalived
+  systemd:
+    name: keepalived
+    enabled: yes
+    state: restarted

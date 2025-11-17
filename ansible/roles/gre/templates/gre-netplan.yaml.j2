@@ -1,0 +1,19 @@
+{% if item == "main" %}
+{% set gre_ip = gre_main_ip %}
+{% set remote_wan = remote_main_isp_ip %}
+{% elif item == "backup" %}
+{% set gre_ip = gre_backup_ip %}
+{% set remote_wan = remote_backup_isp_ip %}
+{% endif %}
+network:
+  version: 2
+  tunnels:
+    gre-{{ item }}:
+      mode: gre
+      local: {{ wan_ip }}
+      remote: {{ remote_wan }}
+      addresses:
+        - {{ gre_ip }}/30
+      mtu: 1360
+      dhcp4: no
+      dhcp6: no

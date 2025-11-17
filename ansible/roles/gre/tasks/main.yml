@@ -1,0 +1,60 @@
+---
+- name: Create GRE tunnels via Netplan
+  template:
+    src: gre-netplan.yaml.j2
+    dest: "/etc/netplan/10-gre-{{ item }}.yaml"
+    mode: '0600'
+  loop:
+    - main
+    - backup
+
+- name: Apply Netplan
+  command: netplan apply
+
+- name: Refresh interface facts
+  ansible.builtin.setup:
+    gather_subset:
+      - 'interfaces'
+
+- name: Discover GRE interfaces
+  ansible.builtin.set_fact:
+    gre_interfaces: "{{ ansible_interfaces | select('match', '^gre-(m|b).*') | list }}"
+
+- name: Debug GRE interfaces
+  ansible.builtin.debug:
+    msg: "Found GRE interfaces: {{ gre_interfaces }}"
+
+- name: Validate that GRE interfaces exist
+  ansible.builtin.assert:
+    that:
+      - gre_interfaces | length > 0
+    fail_msg: "No GRE interfaces found"
+    success_msg: "GRE interfaces found: {{ gre_interfaces }}"
+
+- name: Apply MSS clamping rule only if not already exists
+  ansible.builtin.shell: |
+    if ! iptables -t mangle -C FORWARD -d {{ lan_cidr }} -i {{ item }} -p tcp --tcp-flags SYN,RST SYN -m length --length 1321:65535 -j TCPMSS --set-mss 1320 -m comment --comment 'Clamp MSS to 1320 for GRE tunnel {{ item }}' 2>/dev/null; then
+      iptables -t mangle -I FORWARD -d {{ lan_cidr }} -i {{ item }} -p tcp --tcp-flags SYN,RST SYN -m length --length 1321:65535 -j TCPMSS --set-mss 1320 -m comment --comment 'Clamp MSS to 1320 for GRE tunnel {{ item }}'
+      echo "rule_added"
+    else
+      echo "rule_already_exists"
+    fi
+  loop: "{{ gre_interfaces }}"
+  register: iptables_shell
+  changed_when: 
+    - iptables_shell.stdout == "rule_added"
+  notify: save iptables
+
+- name: Apply MSS clamping rule only if not already exists
+  ansible.builtin.shell: |
+    if ! iptables -t mangle -C FORWARD -s {{ lan_cidr }} -o {{ item }} -p tcp --tcp-flags SYN,RST SYN -m length --length 1321:65535 -j TCPMSS --set-mss 1320 -m comment --comment 'Clamp MSS to 1320 for GRE tunnel {{ item }}' 2>/dev/null; then
+      iptables -t mangle -I FORWARD -s {{ lan_cidr }} -o {{ item }} -p tcp --tcp-flags SYN,RST SYN -m length --length 1321:65535 -j TCPMSS --set-mss 1320 -m comment --comment 'Clamp MSS to 1320 for GRE tunnel {{ item }}'
+      echo "rule_added"
+    else
+      echo "rule_already_exists"
+    fi
+  loop: "{{ gre_interfaces }}"
+  register: iptables_shell
+  changed_when: 
+    - iptables_shell.stdout == "rule_added"
+  notify: save iptables

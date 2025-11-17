@@ -1,0 +1,29 @@
+---
+### Disable IPv6
+
+- name: Disable IPv6 on all servers
+  hosts: all
+  become: yes
+  roles:
+    - disable_ipv6
+
+
+### Configure Routers
+
+- name: Configure Routers
+  hosts: ubuntu_routers
+  become: yes
+  roles:
+    - base
+    - gre
+    - strongswan
+    - frr_router
+    - keepalived
+
+### (optional) configure private servers
+
+- name: Configure Private Servers
+  hosts: private_servers
+  become: yes
+  roles:
+    - private_base

@@ -1,0 +1,58 @@
+connections {
+  gre-main {
+    local_addrs = {{ wan_ip }}
+    remote_addrs = {{ remote_main_isp_ip }}
+
+    local { auth = psk }
+    remote { auth = psk }
+
+    version = 2
+    proposals = {{ ike_proposal }}
+    rekey_time = {{ ike_lifetime }}s
+
+    children {
+      gre-main {
+        local_ts = dynamic[gre]
+        remote_ts = dynamic[gre]
+        esp_proposals = {{ esp_proposal }}
+        rekey_time = {{ esp_lifetime }}s
+        mode = transport
+        dpd_action = restart
+        close_action = restart
+      }
+    }
+    dpd_timeout = {{ dpd_timeout }}s
+  }
+
+  gre-backup {
+    local_addrs = {{ wan_ip }}
+    remote_addrs = {{ remote_backup_isp_ip }}
+
+    local { auth = psk }
+    remote { auth = psk }
+
+    version = 2
+    proposals = {{ ike_proposal }}
+    rekey_time = {{ ike_lifetime }}s
+
+    children {
+      gre-backup {
+        mode = transport
+        local_ts = dynamic[gre]
+        remote_ts = dynamic[gre]
+        esp_proposals = {{ esp_proposal }}
+        rekey_time = {{ esp_lifetime }}s
+        mode = transport
+        dpd_action = restart
+        close_action = restart
+      }
+    }
+    dpd_timeout = {{ dpd_timeout }}s
+  }
+}
+
+secrets {
+  ike {
+    secret = "{{ ipsec_psk }}"
+  }
+}

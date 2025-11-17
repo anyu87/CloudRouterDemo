@@ -1,0 +1,62 @@
+---
+- name: Update package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install FRR and required packages
+  apt:
+    name:
+      - frr
+      - frr-pythontools
+    state: present
+
+- name: Create FRR configuration directory
+  file:
+    path: /etc/frr
+    state: directory
+    owner: frr
+    group: frr
+    mode: '0755'
+
+- name: Enable FRR daemons
+  lineinfile:
+    path: /etc/frr/daemons
+    regexp: '^{{ item.daemon }}='
+    line: '{{ item.daemon }}={{ item.state }}'
+    backup: yes
+  loop:
+    - { daemon: 'bgpd', state: 'yes' }
+    - { daemon: 'zebra', state: 'yes' }
+    - { daemon: 'staticd', state: 'yes' }
+
+- name: Configure FRR startup options
+  lineinfile:
+    path: /etc/frr/daemons
+    regexp: '^{{ item.option }}='
+    line: '{{ item.option }}={{ item.value }}'
+    backup: yes
+  loop:
+    - { option: 'frr_options', value: '"-A 127.0.0.1"' }
+
+- name: Configure FRR
+  template:
+    src: bgpd_router.conf.j2
+    dest: /etc/frr/frr.conf
+    owner: frr
+    group: frr
+    mode: '0640'
+  notify: Restart FRR
+
+- name: Restart FRR
+  systemd:
+    name: frr
+    state: restarted
+    daemon_reload: yes
+
+# - name: Wait for FRR to be fully started
+#   wait_for:
+#     path: /run/frr/bgpd.vty
+#     state: present
+#     timeout: 30
+#   when: ansible_service_mgr == "systemd"

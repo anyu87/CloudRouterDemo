@@ -1,0 +1,5 @@
+- name: Restart FRR
+  systemd:
+    name: frr
+    state: restarted
+    daemon_reload: yes

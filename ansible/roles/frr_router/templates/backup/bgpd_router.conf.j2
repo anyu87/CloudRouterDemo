@@ -1,0 +1,58 @@
+!
+frr version
+frr defaults traditional
+hostname {{ inventory_hostname }}
+log syslog informational
+!
+router bgp {{ local_asn }}
+ bgp router-id {{ lan_ip }}
+ !
+ network {{ lan_cidr }}
+ network {{ external_cidr }}
+ !
+ neighbor {{ hostvars['router1'].lan_ip if inventory_hostname != 'router1' else hostvars['router2'].lan_ip }} remote-as {{ local_asn }}
+ neighbor {{ hostvars['router1'].lan_ip if inventory_hostname != 'router1' else hostvars['router2'].lan_ip }} update-source eth1
+ !
+ neighbor {{ gre_main_ip | ipmath(1) }} remote-as {{ remote_asn }}
+ neighbor {{ gre_main_ip | ipmath(1) }} update-source gre-main
+ neighbor {{ gre_main_ip | ipmath(1) }} timers 10 30
+ !
+ neighbor {{ gre_backup_ip | ipmath(1) }} remote-as {{ remote_asn }}
+ neighbor {{ gre_backup_ip | ipmath(1) }} update-source gre-backup
+ neighbor {{ gre_backup_ip | ipmath(1) }} timers 10 30
+ !
+ address-family ipv4 unicast
+  neighbor {{ hostvars['router1'].lan_ip if inventory_hostname != 'router1' else hostvars['router2'].lan_ip }} activate
+  neighbor {{ hostvars['router1'].lan_ip if inventory_hostname != 'router1' else hostvars['router2'].lan_ip }} next-hop-self
+  neighbor {{ gre_main_ip | ipmath(1) }} activate
+  neighbor {{ gre_backup_ip | ipmath(1) }} activate
+  neighbor {{ gre_main_ip | ipmath(1) }} route-map SET-PREF-{{ local_pref_main }} in
+  neighbor {{ gre_backup_ip | ipmath(1) }} route-map SET-PREF-{{ local_pref_backup }} in
+  neighbor {{ hostvars['router1'].lan_ip if inventory_hostname != 'router1' else hostvars['router2'].lan_ip }} route-map OUT-LAN out
+  neighbor {{ gre_main_ip | ipmath(1) }} route-map OUT-EXTERNAL out
+  neighbor {{ gre_backup_ip | ipmath(1) }} route-map OUT-EXTERNAL out
+ exit-address-family
+!
+route-map SET-PREF-400 permit 10
+ set local-preference 400
+!
+route-map SET-PREF-300 permit 10
+ set local-preference 300
+!
+route-map SET-PREF-200 permit 10
+ set local-preference 200
+!
+route-map SET-PREF-100 permit 10
+ set local-preference 100
+!
+route-map OUT-LAN permit 10
+ match ip address prefix-list LAN-ONLY
+!
+route-map OUT-EXTERNAL permit 10
+ match ip address prefix-list EXTERNAL-ONLY
+!
+ip prefix-list LAN-ONLY seq 5 permit {{ lan_cidr }}
+ip prefix-list EXTERNAL-ONLY seq 5 permit {{ external_cidr }}
+!
+line vty
+!

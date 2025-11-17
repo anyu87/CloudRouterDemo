@@ -1,0 +1,69 @@
+---
+- name: Update packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install System Utils Packages
+  apt:
+    name:
+      - net-tools
+      - nmon
+      - htop
+      - bmon
+      - mtr
+    state: present
+
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Load GRE module
+  modprobe:
+    name: ip_gre
+    state: present
+
+- name: Persist GRE module
+  lineinfile:
+    path: /etc/modules
+    line: ip_gre
+    create: yes
+
+- name: Pre-seed iptables-persistent IPv4
+  debconf:
+    name: iptables-persistent
+    question: iptables-persistent/autosave_v4
+    value: "true"
+    vtype: boolean
+
+- name: Pre-seed iptables-persistent IPv6
+  debconf:
+    name: iptables-persistent
+    question: iptables-persistent/autosave_v6
+    value: "false"
+    vtype: boolean
+
+- name: Install iptables-persistent
+  apt:
+    name: iptables-persistent
+    state: present
+
+- name: NAT masquerade for LAN
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    jump: MASQUERADE
+    source: "{{ lan_cidr }}"
+    out_interface: "eth0"
+    comment: "LAN to Internet"
+  notify: save iptables
+
+- name: Allow forwarding
+  iptables:
+    chain: FORWARD
+    policy: ACCEPT
+  notify: save iptables

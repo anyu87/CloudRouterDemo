@@ -1,0 +1,17 @@
+---
+- name: Update packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install utilities
+  apt:
+    name:
+      - net-tools
+      - traceroute
+      - iproute2
+      - mtr
+      - bmon
+      - htop
+    state: present

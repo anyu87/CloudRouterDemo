@@ -1,0 +1,104 @@
+!
+! FRR BGP Configuration Template (Managed by Ansible)
+!
+frr version
+frr defaults traditional
+hostname {{ inventory_hostname }}
+log syslog informational
+!
+! Static route for originating a network in BGP if it's not directly connected
+!
+
+! Interface configurations
+interface eth1
+ ip address {{ lan_ip }}/{{ lan_network_prefix }}
+!
+interface gre-main
+ ip address {{ gre_main_ip }}/30
+!
+interface gre-backup
+ ip address {{ gre_backup_ip }}/30
+!
+
+! BGP Configuration
+router bgp {{ local_asn }}
+ bgp router-id {{ lan_ip }}
+ !
+ ! Networks to originate from this router
+ network {{ lan_cidr }}
+ !
+ ! iBGP neighbor configuration
+ neighbor {{ remote_ibgp_peer }} remote-as {{ local_asn }}
+ neighbor {{ remote_ibgp_peer }} update-source eth1
+ !
+ ! eBGP neighbors configuration
+ neighbor {{ gre_main_ip | ipmath(1) }} remote-as {{ remote_asn }}
+ neighbor {{ gre_main_ip | ipmath(1) }} ebgp-multihop 255
+ neighbor {{ gre_main_ip | ipmath(1) }} update-source gre-main
+ neighbor {{ gre_main_ip | ipmath(1) }} timers 10 30
+ !
+ neighbor {{ gre_backup_ip | ipmath(1) }} remote-as {{ remote_asn }}
+ neighbor {{ gre_backup_ip | ipmath(1) }} ebgp-multihop 255
+ neighbor {{ gre_backup_ip | ipmath(1) }} update-source gre-backup
+ neighbor {{ gre_backup_ip | ipmath(1) }} timers 10 30
+ !
+ address-family ipv4 unicast
+  ! Activate neighbors
+  neighbor {{ remote_ibgp_peer }} activate
+  neighbor {{ gre_main_ip | ipmath(1) }} activate
+  neighbor {{ gre_backup_ip | ipmath(1) }} activate
+  
+  ! Policy configurations for neighbors
+  neighbor {{ remote_ibgp_peer }} next-hop-self
+  neighbor {{ remote_ibgp_peer }} route-map ALLOW-RFC1918-OUT out
+  
+  neighbor {{ gre_main_ip | ipmath(1) }} route-map FROM-MAIN-PEER in
+  neighbor {{ gre_main_ip | ipmath(1) }} route-map TO-MAIN-PEER out
+  
+  neighbor {{ gre_backup_ip | ipmath(1) }} route-map FROM-BACKUP-PEER in
+  neighbor {{ gre_backup_ip | ipmath(1) }} route-map TO-BACKUP-PEER out
+ exit-address-family
+!
+
+!
+! Route Maps for BGP Policy
+!
+! Inbound policy from the main external peer
+route-map FROM-MAIN-PEER permit 10
+ match ip address prefix-list RFC1918-NETS
+ set local-preference {{ local_pref_main | default(400) }}
+!
+! Inbound policy from the backup external peer
+route-map FROM-BACKUP-PEER permit 10
+ match ip address prefix-list RFC1918-NETS
+ set local-preference {{ local_pref_backup | default(300) }}
+!
+! Outbound policy for the main external peer
+route-map TO-MAIN-PEER permit 10
+ match ip address prefix-list RFC1918-NETS
+ set metric {{ bgp_med_main }}
+!
+! Outbound policy for the main external peer
+route-map TO-BACKUP-PEER permit 10
+ match ip address prefix-list RFC1918-NETS
+ set metric {{ bgp_med_backup }}
+!
+!
+! Prefix List for RFC1918 networks and default route filtering
+!
+! Rule 1: Explicitly deny the default route
+ip prefix-list RFC1918-NETS seq 5 deny 0.0.0.0/0
+
+! Rule 2: Permit 10.0.0.0/8 and all its subnets
+ip prefix-list RFC1918-NETS seq 10 permit 10.0.0.0/8 le 32
+
+! Rule 3: Permit 172.16.0.0/12 and all its subnets
+ip prefix-list RFC1918-NETS seq 15 permit 172.16.0.0/12 le 32
+
+! Rule 4: Permit 192.168.0.0/16 and all its subnets
+ip prefix-list RFC1918-NETS seq 20 permit 192.168.0.0/16 le 32
+!
+
+! VTY lines for management access
+line vty
+!
