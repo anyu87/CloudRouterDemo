@@ -6,7 +6,7 @@ This is a conceptual Demo Scenario that will help you to bring highly available 
 
 The materials from this repository will help you quickly build from the scratch the following network topology:
 
-[Target Topology](img/topology.svg)
+![Target Topology](img/topology.svg)
 
 To prepare your admin workstation (desktop, laptop or maybe something else) follow these steps:
 
@@ -39,18 +39,18 @@ Configure `IaaS Routers` using role-based playbooks controlled via the [Inventor
 - FRR (to manage BGP)
 - Keepalived (VRRP)
 
-[Private and Public Ports](img/ports.svg)
+![Private and Public Ports](img/ports.svg)
 
 Each IaaS Router will use two secured connections to On-Prem environment through the Internet:
 
 - IPsec Site-to-Site in Transport Mode (to protect GRE Tunnels)
 - GRE Tunnel (to transfer a data)
 
-[Secured Connections](img/connections.svg)
+![Secured Connections](img/connections.svg)
 
 GRE Tunnels topology clearly ecxplained in the following diagram:
 
-[GRE Tunnels](img/tunnels.svg)
+![GRE Tunnels](img/tunnels.svg)
 
 **High Availability Design**
 
@@ -61,4 +61,4 @@ BGP peering eliminates single points of failure on the Cloud side through:
 - Automatic failover during circuit failures (including Cloud Availability Zone failures)
 - Asymmetric routing prevention via MED and Local Preference configuration
 
-[BGP Peering](img/bgp.svg)
+![BGP Peering](img/bgp.svg)
