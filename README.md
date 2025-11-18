@@ -2,7 +2,7 @@
 
 This is a conceptual Demo Scenario that will help you to bring highly available and secured connectivity with dynamic routing between Cloud and On-Prem using regular Internet circuits.
 
->Key idea of this scenario based on limitations coming from On-Prem side which as two Internet circuits (Main and Backup where Backup is the `Radio Bridge`)
+>Key idea of this scenario based on limitations coming from On-Prem side which has two Internet circuits (Main and Backup where Backup is the `Radio Bridge`)
 
 The materials from this repository will help you quickly build from the scratch the following network topology:
 
@@ -23,7 +23,7 @@ Additional Steps:
 
 # Under the Hood
 
->Main part of thies scenario related to the routers (a pair of IaaS Virtual Machines (`IaaS Routers`) converted into traditional routers with advanced functionoality)
+>Main part of this scenario related to the routers (a pair of IaaS Virtual Machines (`IaaS Routers`) converted into traditional routers with advanced functionality)
 
 **Terraform**
 
@@ -48,7 +48,7 @@ Each IaaS Router will use two secured connections to On-Prem environment through
 
 ![Secured Connections](img/connections.svg)
 
-GRE Tunnels topology clearly ecxplained in the following diagram:
+GRE Tunnels topology clearly explained in the following diagram:
 
 ![GRE Tunnels](img/tunnels.svg)
 
