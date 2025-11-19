@@ -25,6 +25,12 @@ Additional Steps:
 
 >Main part of this scenario related to the routers (a pair of IaaS Virtual Machines (`IaaS Routers`) converted into traditional routers with advanced functionality)
 
+**IPv4 addressing plan for the project**
+
+Here is a card to assist with configuration planning. The card is filled out using the IP addressing from the Demo Scenario and the `inventory.ini` file, which will be used when running the Ansible playbook.
+
+![IPv4 Planning Card](img/ipv4_card.svg)
+
 **Terraform**
 
 Provisions a pair of `IaaS Routers` with internal and external ports. Includes supplimentary Shell script (which is a part of Terraform manifest) to maintain configuration across reboots.
